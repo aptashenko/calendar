@@ -3,15 +3,23 @@ import advancedFormat from 'dayjs/plugin/advancedFormat'
 import weekday from 'dayjs/plugin/weekday'
 import isLeapYear from 'dayjs/plugin/isLeapYear'
 import isoWeek from 'dayjs/plugin/isoWeek'
+import {months} from "@/common/static/months";
+import {ref} from "vue";
 dayjs.extend(advancedFormat)
 dayjs.extend(weekday)
 dayjs.extend(isLeapYear)
 dayjs.extend(isoWeek)
 export function useDaysGrid() {
   const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-  const daysGrid = ({month, year}) => {
+  const days = ref(null);
 
-    const startOfMonth = dayjs(new Date(year, month, 1))
+  const setDays = (month, year) => {
+    days.value = daysGrid({month, year});
+  }
+  const daysGrid = ({month, year}) => {
+    const monthIdx = months.indexOf(month)
+
+    const startOfMonth = dayjs(new Date(year, monthIdx, 1))
     const daysInMonth = startOfMonth.daysInMonth();
     const startDayOfWeek = startOfMonth.isoWeekday() - 1
     const daysArray = []
@@ -23,7 +31,7 @@ export function useDaysGrid() {
 
     // Добавляем дни текущего месяца
     for (let i = 1; i <= daysInMonth; i++) {
-      daysArray.push({ date: `${year}-${month < 10 ? '0' + month : month}-${i < 10 ? '0'+i : i}`, isCurrentMonth: true })
+      daysArray.push({ date: `${year}-${monthIdx + 1 < 10 ? '0' + (monthIdx + 1) : monthIdx + 1}-${i < 10 ? '0' + i : i}`, isCurrentMonth: true })
     }
 
     // Вычисляем количество оставшихся ячеек для завершения сетки
@@ -38,5 +46,5 @@ export function useDaysGrid() {
     return daysArray
   }
 
-  return {daysGrid, dayNames}
+  return {daysGrid, dayNames, days, setDays}
 }

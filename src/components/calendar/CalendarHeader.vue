@@ -2,7 +2,7 @@
   <div class="the-header">
     <div class="the-header__datepicker">
       <v-select
-        label="Year"
+        label="Рік"
         v-model="year"
         :items="yearsList"
         style="flex-basis: 40%"
@@ -10,7 +10,7 @@
         class="date-year"
       />
       <v-select
-        label="Month"
+        label="Місяць"
         v-model="month"
         :items="months"
         item-title="label"
@@ -18,6 +18,16 @@
         style="flex-basis: 60%"
         variant="solo"
         class="date-month"
+      />
+    </div>
+
+    <div>
+      <v-combobox
+        v-model="categories"
+        :items="categoriesItems"
+        chips
+        label="Оберіть категорії"
+        multiple
       />
     </div>
 
@@ -32,9 +42,12 @@ import { months } from "@/common/static/months";
 import {ref} from "vue";
 const year = defineModel('year');
 const month = defineModel('month');
+const categories = defineModel('categories');
+
+const categoriesItems = [...categories.value];
 
 const yearsList = Array.from({length: 20}, (_, idx) => (2024 - idx));
-const isAuth = ref(localStorage.getItem('token'))
+const isAuth = ref(localStorage.getItem('token'));
 const logOut = () => {
   localStorage.removeItem('token');
   window.location.reload()

@@ -4,36 +4,21 @@
       <div class="calendar-desk__day-name" v-for="day in dayNames" :key="day">{{ day }}</div>
     </div>
     <div class="calendar-desk__grid">
-      <template v-if="type === 'desk'">
-        <component
-          v-for="(day, index) in days"
-          :is="components[DAY_TYPES.empty]"
-          :key="index"
-          :day="day"
-        />
-      </template>
-      <template v-if="type === 'small'">
-        <div
-          v-for="day in days"
-          class="calendar-desk__small-date"
-          :class="{active: day.isCurrentMonth}"
-          @click="setDate(day.date)"
-        >
-          <span v-if="day.isCurrentMonth">{{new Date(day.date).getDate()}}</span>
-        </div>
-      </template>
+      <EmptyDay
+        v-for="(day, index) in days"
+        :key="index"
+        :day="day"
+        :events="findDate(day)"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
-
 import EmptyDay from "@/components/calendar/days-types/EmptyDay.vue";
-const components = { EmptyDay }
-
-import { DAY_TYPES } from "@/components/calendar/days-types/enums";
 import {useDaysGrid} from "@/composables/useDaysGrid";
-import {computed} from "vue";
+import {watch} from "vue";
+import dayjs from "dayjs";
 
 const props = defineProps({
   year: {
@@ -44,23 +29,20 @@ const props = defineProps({
     type: Number,
     default: new Date().getMonth() + 1,
   },
-  type: {
-    type: String,
-    default: 'desk'
+  events: {
+    type: Array,
+    default: () => []
   }
 })
 
-const emit = defineEmits(['set-date'])
+const findDate = date => props.events?.filter(item => dayjs(item.startDate).format('DD-MM-YYYY') === dayjs(date.date).format('DD-MM-YYYY'));
 
-const { daysGrid, dayNames } = useDaysGrid();
+const { dayNames, days, setDays } = useDaysGrid();
 
-const formattedMonth = computed(() => props.type === 'small' ? props.month - 1 : props.month)
+watch(() => [props.year, props.month], ([year, month]) => {
+  setDays(month, year)
+}, {immediate: true})
 
-const days = daysGrid({month: formattedMonth.value, year: props.year})
-
-const setDate = date => {
-  emit('set-date', date)
-}
 </script>
 
 <style lang="scss" scoped>

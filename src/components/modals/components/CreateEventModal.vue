@@ -1,6 +1,6 @@
 <template>
-  <div class="create-event">
-    <v-form @submit.prevent class="create-event__form">
+  <div class="create-event" @click="closeDatePicker">
+    <v-form @submit.prevent="onSubmit" class="create-event__form">
       <v-text-field
         v-model="form.name"
         :rules="rules"
@@ -17,27 +17,49 @@
         variant="outlined"
         label="Start date*"
       />
-      <v-text-field
-        v-model="form.endDate"
+      <v-select
+        v-model="form.categoryId"
         color="black"
-        disabled
         class="text-black"
+        :items="eventCategories"
+        item-title="name"
+        item-value="id"
         variant="outlined"
-        placeholder="DD-MM-YYYY"
-        label="End date"
+        label="Category*"
       />
-      <v-btn class="mt-2" type="submit" :disabled="disableCta && form.name && form.startDate" block>Create</v-btn>
+      <div @click.stop="openDatePicker">
+        <v-text-field
+          v-model="form.endDate"
+          color="black"
+          disabled
+          class="text-black"
+          variant="outlined"
+          placeholder="DD-MM-YYYY"
+          label="End date"
+        />
+      </div>
+      <v-btn class="mt-2" type="submit" :disabled="!enableCta" block>Create</v-btn>
     </v-form>
-    <calendar-desk type="small" @set-date="setEndDate" />
+    <transition name="fade" mode="out-in">
+      <date-picker
+        v-if="isToggled"
+        @set-date="setEndDate"
+        class="create-event__date-picker"
+        :start-date="form.startDate"
+        @close="closeDatePicker"
+        @click.stop
+      />
+    </transition>
   </div>
 </template>
 
 <script setup>
-import {createEventForm} from "@/common/static/defaultStates";
-import {onMounted, reactive, ref} from "vue";
-import dayjs from 'dayjs'
-import SmallCalendar from "@/components/calendar/SmallCalendar.vue";
-import CalendarDesk from "@/components/calendar/CalendarDesk.vue";
+import {createEventForm, eventCategories} from "@/common/static/defaultStates";
+import {computed, onMounted, reactive, ref} from "vue";
+import DatePicker from "@/components/shared/DatePicker.vue";
+import {useToggle} from "@/composables/useToggle";
+import {useFetchEvents} from "@/composables/useFetchEvents";
+import {useModals} from "@/composables/useModals";
 
 const props = defineProps({
   start: {
@@ -45,35 +67,44 @@ const props = defineProps({
   }
 })
 
-const disableCta = ref(true);
-
+const { isToggled, toggle:openDatePicker } = useToggle()
+const { createEvent } = useFetchEvents();
+const { toggleComponent } = useModals();
+const closeDatePicker = () => {
+  isToggled.value = false
+}
 const form = reactive({...createEventForm});
 const rules = [
   value => {
-    if (value) {
-      disableCta.value = false;
-      return true
-    }
-
-    disableCta.value = true;
+    if (value) { return true }
     return 'This field is required'
   },
 ];
+
+const enableCta = computed(() => !!form.name && !!form.startDate && !!form.categoryId)
 const setStartDate = () => {
   if (!props.start) return
-  form.startDate = dayjs(props.start).format('DD-MM-YYYY')
+  form.startDate = props.start
 }
 const setEndDate = date => {
-  const formattedDate = dayjs(date).format('DD-MM-YYYY')
-  if (form.startDate > formattedDate) return
-  form.endDate = formattedDate;
+  if (form.startDate > date) return
+  form.endDate = date;
+}
+
+const onSubmit = () => {
+  createEvent(form);
+  toggleComponent()
 }
 
 onMounted(setStartDate)
 </script>
 
 <style lang="scss">
+@import "@/assets/styles/animations.scss";
+
 .create-event {
+  z-index: 2;
+
   display: grid;
   place-items: center;
 
@@ -94,6 +125,13 @@ onMounted(setStartDate)
 
   &__form {
     width: 100% !important;
+  }
+
+  &__date-picker {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    z-index: -1;
   }
 }
 </style>
